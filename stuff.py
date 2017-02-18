@@ -33,7 +33,7 @@ def GenerateFigures(min_things, max_size): #used for auto generating figures
         print(figure)
     return figures
 
-def CheckFigure(figure, x, y, n, map_pizza, map_checked, y_len, x_len):
+def CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len):
     tn = 0
     mn = 0
     if ((figure.height+y > y_len) or (figure.width+x > x_len)):
@@ -53,9 +53,9 @@ def CheckFigure(figure, x, y, n, map_pizza, map_checked, y_len, x_len):
     else:
         return 0
     
-def CutASlice(map_pizza, map_checked, x, y, n, slices, figures, y_len, x_len):
+def CutASlice(map_pizza, map_checked, x, y, n, slices, figures, x_len, y_len):
     for figure in figures:
-        if CheckFigure(figure, x, y, n, map_pizza, map_checked, y_len, x_len) == 1:
+        if CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len) == 1:
             figure.CutFromMap(x, y, map_checked)
             slices.append(Slice(x, y, figure))
             return True
@@ -89,44 +89,48 @@ def ChooseBestShuffle(map_pizza, map_checked, n, slices, figures, x_len, y_len):
         print ("Slices: ", len(slices))
         print ("Score: ", score)
 
-        
-start_time = time.time()        
-file_object  = open("big.in", "r")
+def FindSlicesForFile(input_filename):
+    start_time = time.time()
+    file_object  = open(input_filename, "r")
+    y_len, x_len, min_things, max_size = list(map(int, file_object.readline().split(' '))) #initialising things from data file
+    figures = GenerateFigures(min_things, max_size); # generating figures
+    a= file_object.readlines()
+    map_pizza = [[0 for x in range(x_len)] for y in range(y_len)]
+    map_checked = [[0 for x in range(x_len)] for y in range(y_len)]
+    slices = []
+    shrooms = 0
+    tomatoes = 0
+    for y in range(y_len):
+        for x in range(x_len):
+            if(a[y][x] == "M"):
+                map_pizza[y][x] = 0
+                shrooms+=1
+            else:
+                map_pizza[y][x] = 1
+                tomatoes+=1
 
-x_len, y_len, min_things, max_size = list(map(int, file_object.readline().split(' '))) #initialising things from data file
-figures = GenerateFigures(min_things, max_size); # generating figures
-a= file_object.readlines()
-map_pizza = [[0 for y in range(y_len)] for x in range(x_len)]
-map_checked = [[0 for y in range(y_len)] for x in range(x_len)]
-slices = []
-shrooms = 0
-tomatoes = 0
-for y in range(y_len):
-    for x in range(x_len):
-        if(a[y][x] == "M"):
-            map_pizza[y][x] = 0
-            shrooms+=1
-        else:
-            map_pizza[y][x] = 1
-            tomatoes+=1
+    print(shrooms," ",tomatoes, shrooms+tomatoes)
+    figs = 0
+    CutAllPizza(map_pizza, map_checked, min_things, slices, figures, x_len, y_len)
+    input_filename+='_results'
+    file = open(input_filename, "w")
+    file.write(str(len(slices)))
+    for slice in slices:
+        file.write('\n')
+        file.write(str(slice))
+    file.close()
+    score = 0
+    for y in map_checked:
+        for x in y:
+            score += x
 
-print(shrooms," ",tomatoes, shrooms+tomatoes)
-figs = 0
+    print("Time: ", time.time() - start_time)
+    print ("Slices: ", len(slices))
+    print ("Score: ", score)
+    #ChooseBestShuffle(map_pizza, map_checked, 6, slices, figures, x_len, y_len)
+    print()
 
-CutAllPizza(map_pizza, map_checked, min_things, slices, figures, x_len, y_len)
-file = open("rez.txt", "w")
-file.write(str(len(slices)))
-for slice in slices:
-    file.write('\n')
-    file.write(str(slice))
-file.close()
-score = 0
-for y in map_checked:
-    for x in y:
-        score += x
-                
-print("Time: ", time.time() - start_time)
-print ("Slices: ", len(slices))
-print ("Score: ", score)
-#ChooseBestShuffle(map_pizza, map_checked, 6, slices, figures, x_len, y_len)
-print()
+FindSlicesForFile("big.in")
+FindSlicesForFile("medium.in")
+FindSlicesForFile("example.in")
+FindSlicesForFile("small.in")
