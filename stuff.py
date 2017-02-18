@@ -19,18 +19,18 @@ class Figure:
             for xx in range(self.width):
                 map_checked[y+yy][x+xx] = 1
 
-def GenerateFigures(figures, number):
+def GenerateFigures(min_things, max_size): #used for auto generating figures
     figures = []
-    figures.append(Figure(12,1))
-    figures.append(Figure(1,12))
-    figures.append(Figure(4,3))
-    figures.append(Figure(3,4))
-    figures.append(Figure(2,6))
-    figures.append(Figure(6,2))
-    figures.append(Figure(1,13))
-    figures.append(Figure(13,1))
-    figures.append(Figure(7,2))
-    figures.append(Figure(2,7))
+    for i in range(1, (max_size//2)+1):
+        for j in range(i, max_size+1):
+            if (i*j <= max_size and i*j >= min_things*2):
+                figures.append(Figure(i,j))
+                figures.append(Figure(j,i))
+
+
+
+    for figure in figures:
+        print(figure)
     return figures
 
 def CheckFigure(figure, x, y, n, map_pizza, map_checked, y_len, x_len):
@@ -60,11 +60,13 @@ def CutASlice(map_pizza, map_checked, x, y, n, slices, figures, y_len, x_len):
             slices.append(Slice(x, y, figure))
             return True
     return False
+
 def CutAllPizza(map_pizza, map_checked, n, slices, figures, x_len, y_len):
     for y in range(y_len):
         for x in range(x_len):
             if(map_checked[y][x] == 0):
                 CutASlice(map_pizza, map_checked, x, y, n, slices, figures, x_len, y_len)
+
 def ChooseBestShuffle(map_pizza, map_checked, n, slices, figures, x_len, y_len):
     for i in range(10):
         map_checked = [[0 for y in range(y_len)] for x in range(x_len)]
@@ -90,9 +92,9 @@ def ChooseBestShuffle(map_pizza, map_checked, n, slices, figures, x_len, y_len):
         
 start_time = time.time()        
 file_object  = open("big.in", "r")
-figures = []
-figures = GenerateFigures(figures, 6)
-x_len,y_len,min,max = list(map(int, file_object.readline().split(' ')))
+
+x_len, y_len, min_things, max_size = list(map(int, file_object.readline().split(' '))) #initialising things from data file
+figures = GenerateFigures(min_things, max_size); # generating figures
 a= file_object.readlines()
 map_pizza = [[0 for y in range(y_len)] for x in range(x_len)]
 map_checked = [[0 for y in range(y_len)] for x in range(x_len)]
@@ -110,12 +112,8 @@ for y in range(y_len):
 
 print(shrooms," ",tomatoes, shrooms+tomatoes)
 figs = 0
-"""for y in range(1000):
-    for x in range(1000):
-        for figure in figures:
-            if(CheckFigure(figure,y,x, 6, map_pizza, map_checked, y_len, x_len) == 1):
-                figs +=1"""
-CutAllPizza(map_pizza, map_checked, 6, slices, figures, x_len, y_len)
+
+CutAllPizza(map_pizza, map_checked, min_things, slices, figures, x_len, y_len)
 file = open("rez.txt", "w")
 file.write(str(len(slices)))
 for slice in slices:
