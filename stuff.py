@@ -110,11 +110,11 @@ for y in range(y_len):
 
 print(shrooms," ",tomatoes, shrooms+tomatoes)
 figs = 0
-#for y in range(1000):
- #   for x in range(1000): 
-  #      for figure in figures:
-   #         if(CheckFigure(figure,y,x, 6, map_pizza, map_checked, y_len, x_len) == 1):
-    #            figs +=1
+"""for y in range(1000):
+    for x in range(1000):
+        for figure in figures:
+            if(CheckFigure(figure,y,x, 6, map_pizza, map_checked, y_len, x_len) == 1):
+                figs +=1"""
 CutAllPizza(map_pizza, map_checked, 6, slices, figures, x_len, y_len)
 file = open("rez.txt", "w")
 file.write(str(len(slices)))
