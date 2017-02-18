@@ -25,7 +25,8 @@ def GenerateFigures(min_things, max_size): #used for auto generating figures
         for j in range(i, max_size+1):
             if (i*j <= max_size and i*j >= min_things*2):
                 figures.append(Figure(i,j))
-                figures.append(Figure(j,i))
+                if (i != j):
+                    figures.append(Figure(j,i))
 
 
 
@@ -123,10 +124,10 @@ def FindSlicesForFile(input_filename):
     for y in map_checked:
         for x in y:
             score += x
-
+    print(input_filename)
     print("Time: ", time.time() - start_time)
     print ("Slices: ", len(slices))
-    print ("Score: ", score)
+    print ("Score: ", score, " out of ", y_len * x_len)
     #ChooseBestShuffle(map_pizza, map_checked, 6, slices, figures, x_len, y_len)
     print()
 
