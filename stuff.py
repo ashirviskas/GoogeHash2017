@@ -64,14 +64,6 @@ def CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len):
     slice_p = map_pizza[y : y + figure.height, x : x + figure.width]
     mn = len(np.where(slice_p == 0)[0])
     tn = slice_p.size - mn
-    # for yy in range(1, figure.height + 1):
-    #     for xx in range(1, figure.width + 1):
-    #         if (map_checked[y + yy - 1][x + xx - 1] == 1):
-    #             return 0
-    #         if (map_pizza[y + yy - 1][x + xx - 1] == 0):
-    #             mn += 1
-    #         else:
-    #             tn += 1
     if (mn >= n and tn >= n):
         # print("t: ", tn, "m: ", mn)
         return 1
@@ -150,26 +142,29 @@ def ChooseBestShuffle(map_pizza, map_checked, n, slices, figures, x_len, y_len):
 """
 
 
-def FindSlicesForFile(input_filename):
-    start_time = time.time()
-    file_object = open(input_filename, "r")
+def read_file(filename):
+    file_object = open(filename, "r")
     y_len, x_len, min_things, max_size = list(
         map(int, file_object.readline().split(' ')))  # initialising things from data file
-    figures = GenerateFigures(min_things, max_size)  # generating figures
+
     a = file_object.readlines()
     for i, line in enumerate(a):
         a[i] = list(line.replace("\n", ""))
     a = np.array(a)
+    mushroom_locations = np.where(a == "M")
     map_pizza = np.zeros((y_len, x_len), dtype=np.bool)
+    map_pizza[mushroom_locations] = 1
+    return y_len, x_len, min_things, max_size, map_pizza
+
+
+def FindSlicesForFile(input_filename):
+    start_time = time.time()
+    y_len, x_len, min_things, max_size, map_pizza = read_file(input_filename)
+    figures = GenerateFigures(min_things, max_size)  # generating figures
+
     map_checked = np.zeros((y_len, x_len), dtype=np.bool)#[[0 for x in range(x_len)] for y in range(y_len)]
     slices = []
-    mushroom_locations = np.where(a == "M")
-    map_pizza[mushroom_locations] = 1
-    shrooms = len(mushroom_locations[0])
-    tomatoes = np.size(a) - shrooms
     print(input_filename)
-    print("Mushrooms: ", shrooms, " Tomatoes: ", tomatoes, " All: ", shrooms + tomatoes)
-    figs = 0
     CutAllPizza(map_pizza, map_checked, min_things, slices, figures, x_len, y_len)
     input_filename += '_results'
     file = open(input_filename, "w")
@@ -193,8 +188,8 @@ def FindSlicesForFile(input_filename):
             if (map_checked[y][x] == 0):
                 PatchAHole(map_pizza, map_checked, min_things, max_size, slices, figures, x_len, y_len, x, y)"""
 
-
-FindSlicesForFile("big.in")
+if __name__ == '__main__':
+    FindSlicesForFile("big.in")
 # FindSlicesForFile("medium.in")
 # FindSlicesForFile("example.in")
 # FindSlicesForFile("small.in")
