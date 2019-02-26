@@ -1,4 +1,4 @@
-# GoogeHash2017
+# Google Hashcode 2017 practice
 ##Auto generated output: 
 
 x: 1 y:14
