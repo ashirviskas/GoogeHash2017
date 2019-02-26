@@ -1,6 +1,7 @@
 import time
 import random
 import numpy as np
+from random import shuffle
 
 
 class Slice:
@@ -10,12 +11,12 @@ class Slice:
         self.figure = figure
 
     def __str__(self):
-        return str(self.y) + " " + str(self.x) + " " + str(self.y + self.figure.height - 1) + " " + str(
-            self.x + self.figure.width - 1)
+        return str(self.y) + " " + str(self.x) + " " + str(self.y + self.figure[0] - 1) + " " + str(
+            self.x + self.figure[1] - 1)
 
     def Overlaps(self, x, y):
-        if (y <= self.y + self.figure.height and y >= self.y):
-            if (x <= self.x + self.figure.width and x >= self.x):
+        if (y <= self.y + self.figure[0] and y >= self.y):
+            if (x <= self.x + self.figure[1] and x >= self.x):
                 return True
         return False
 
@@ -45,101 +46,52 @@ def GenerateFigures(min_things, max_size):  # used for auto generating figures
     for i in range(1, (max_size // 2) + 1):
         for j in range(max_size + 1, i, -1):
             if (i * j <= max_size and i * j >= min_things * 2):
-                figures.append(Figure(i, j))
+                figures.append([i, j])
                 if (i != j):
-                    figures.append(Figure(j, i))
+                    figures.append([j, i])
 
     for figure in figures:
         print(figure)
+    figures = np.array(figures, dtype=np.uint8)
     return figures
 
 
 def CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len):
-    if ((figure.height + y > y_len) or (figure.width + x > x_len)):
-        # print (y_len, figure.width, y)
-        return 0
-    slice_c = map_checked[y : y + figure.height, x : x + figure.width]
-    if 1 in slice_c:
-        return 0
-    slice_p = map_pizza[y : y + figure.height, x : x + figure.width]
-    mn = len(np.where(slice_p == 0)[0])
-    tn = slice_p.size - mn
+    if ((figure[0] + y > y_len) or (figure[1] + x > x_len)):
+        return False
+    if 1 in map_checked[y : y + figure[0], x: x + figure[1]]:
+        return False
+    # slice_p = map_pizza[y : y + figure[0], x: x + figure[1]]
+    # mn = len(np.where(slice_p == 0)[0])
+    mn = np.count_nonzero(map_pizza[y : y + figure[0], x: x + figure[1]] == 1)
+    tn = figure[0] * figure[1] - mn
     if (mn >= n and tn >= n):
         # print("t: ", tn, "m: ", mn)
-        return 1
+        return True
     else:
-        return 0
+        return False
 
 
-# def CheckFigureMin(figure, x, y, n, map_pizza, map_checked, x_len, y_len, xn, yn):
-#     tn = 0
-#     mn = 0
-#     if ((figure.height + y > y_len) or (figure.width + x > x_len)):
-#         # print (y_len, figure.width, y)
-#         return 0
-#     for yy in range(1, figure.height + 1):
-#         for xx in range(1, figure.width + 1):
-#             if (map_checked[yn, xn] != 1):
-#                 if (map_checked[y + yy - 1][x + xx - 1] == 0):
-#                     return 0
-#             if (map_pizza[y + yy - 1][x + xx - 1] == 0):
-#                 mn += 1
-#             else:
-#                 tn += 1
-#     # print("t: ", tn, "m: ", mn)
-#     if (mn >= n and tn >= n):
-#         return 1
-#     else:
-#         return 0
-
-
-def CutASlice(map_pizza, map_checked, x, y, n, slices, figures, x_len, y_len):
+def CutASlice(map_pizza, map_checked, y, x, n, slices, figures, x_len, y_len):
     for figure in figures:
-        if CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len) == 1:
-            figure.CutFromMap(x, y, map_checked)
+        fy, fx = figure
+        if CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len):
+            map_checked[y : y + fy, x : x + fx] = 1
             slices.append(Slice(x, y, figure))
-            return True
-    return False
+            return fx - 1
+    return 0
 
 
 def CutAllPizza(map_pizza, map_checked, n, slices, figures, x_len, y_len):
-    zeros = np.where(map_checked == 0)
-    for i in range(len(zeros[0])):
-        CutASlice(map_pizza, map_checked, zeros[1][i], zeros[0][i], n, slices, figures, x_len, y_len)
-
-
-def ChooseBestShuffle(map_pizza, map_checked, n, slices, figures, x_len, y_len):
-    for i in range(10):
-        map_checked = [[0 for y in range(y_len)] for x in range(x_len)]
-        slices = []
-        start_time = time.time()
-        random.shuffle(figures)
-        for figure in figures:
-            print (figure)
-
-        CutAllPizza(map_pizza, map_checked, 6, slices, figures, x_len, y_len)
-        # for slice in slices:
-        #     file.write('\n')
-        #     file.write(str(slice))
-        #     file.close()
-        score = 0
-        for y in map_checked:
-            for x in y:
-                score += x
-        print("Time: ", time.time() - start_time)
-        print ("Slices: ", len(slices))
-        print ("Score: ", score)
-
-"""def PatchAHole(map_pizza, map_checked, min_things, max_size, slices, figures, x_len, y_len, x, y):
-    for figure in figures:
-            for slice in slices:
-                if slice.Overlaps(x,y):
-                    if (CheckFigureMin(figure, slice.x, slice.y, min_things, map_pizza, map_checked, x_len, y_len, x, y) == 1):
-
-                        #print("Patchey: ", y, " ", x)
-                        #print()
-
-"""
+    for j in range(len(map_checked)):
+        row = map_checked[j, :]
+        zeros = np.where(row == False)
+        skip = 0
+        for i in range(len(zeros[0])):
+            if skip > 0:
+                skip += -1
+                continue
+            skip = CutASlice(map_pizza, map_checked, j, zeros[0][i], n, slices, figures, x_len, y_len)
 
 
 def read_file(filename):
@@ -157,7 +109,7 @@ def read_file(filename):
     return y_len, x_len, min_things, max_size, map_pizza
 
 
-def FindSlicesForFile(input_filename):
+def find_slices_for_file(input_filename):
     start_time = time.time()
     y_len, x_len, min_things, max_size, map_pizza = read_file(input_filename)
     figures = GenerateFigures(min_things, max_size)  # generating figures
@@ -188,8 +140,9 @@ def FindSlicesForFile(input_filename):
             if (map_checked[y][x] == 0):
                 PatchAHole(map_pizza, map_checked, min_things, max_size, slices, figures, x_len, y_len, x, y)"""
 
+
 if __name__ == '__main__':
-    FindSlicesForFile("big.in")
-# FindSlicesForFile("medium.in")
-# FindSlicesForFile("example.in")
-# FindSlicesForFile("small.in")
+    find_slices_for_file("big.in")
+    # find_slices_for_file("medium.in")
+    # find_slices_for_file("example.in")
+    # find_slices_for_file("small.in")
