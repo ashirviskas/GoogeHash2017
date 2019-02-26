@@ -52,15 +52,16 @@ def GenerateFigures(min_things, max_size):  # used for auto generating figures
 
     for figure in figures:
         print(figure)
-    figures = np.array(figures, dtype=np.uint8)
+    figures = np.array(figures[::-1], dtype=np.uint8)
     return figures
 
 
-def CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len):
+def CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len, check_checked = True):
     if ((figure[0] + y > y_len) or (figure[1] + x > x_len)):
         return False
-    if 1 in map_checked[y : y + figure[0], x: x + figure[1]]:
-        return False
+    if check_checked:
+        if 1 in map_checked[y : y + figure[0], x: x + figure[1]]:
+            return False
     # slice_p = map_pizza[y : y + figure[0], x: x + figure[1]]
     # mn = len(np.where(slice_p == 0)[0])
     mn = np.count_nonzero(map_pizza[y : y + figure[0], x: x + figure[1]] == 1)
@@ -72,8 +73,28 @@ def CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len):
         return False
 
 
-def CutASlice(map_pizza, map_checked, y, x, n, slices, figures, x_len, y_len):
-    for figure in figures:
+def generate_figure_possibilitymap(map_pizza, figures, n):
+    figure_possibilitymap = np.zeros((map_pizza.shape[0], map_pizza.shape[1], len(figures)), dtype=np.uint8)
+    figure_areas = np.array([x*y for x, y in figures])
+    y_len, x_len = map_pizza.shape
+    for i, row in enumerate(map_pizza):
+        for j, cell in enumerate(map_pizza):
+            possible = np.array([CheckFigure(figure, j, i, n, map_pizza, None, x_len, y_len, False) for figure in figures])
+            possible = np.where(possible == True)
+            figure_possibilitymap[i, j, possible] = figure_areas[possible]
+            # print(possible)
+    print(figure_areas.nbytes)
+    return figure_possibilitymap
+
+
+def calculate_slice_impact(x, y, figure_possibilitymap, figure):
+    return np.sum(figure_possibilitymap[y:y+figure[0] - 1, x:x+figure[1] - 1])
+
+
+def CutASlice(map_pizza, map_checked, y, x, n, slices, figures, x_len, y_len, figure_possibilitymap):
+    figure_impacts = [calculate_slice_impact(x, y, figure_possibilitymap, figure) for figure in figures]
+    new_figures = [xx for yy, xx in sorted(zip(figure_impacts, figures.tolist()), reverse=True)]
+    for figure in new_figures:
         fy, fx = figure
         if CheckFigure(figure, x, y, n, map_pizza, map_checked, x_len, y_len):
             map_checked[y : y + fy, x : x + fx] = 1
@@ -82,7 +103,7 @@ def CutASlice(map_pizza, map_checked, y, x, n, slices, figures, x_len, y_len):
     return 0
 
 
-def CutAllPizza(map_pizza, map_checked, n, slices, figures, x_len, y_len):
+def CutAllPizza(map_pizza, map_checked, n, slices, figures, x_len, y_len, figure_possibilitymap):
     for j in range(len(map_checked)):
         row = map_checked[j, :]
         zeros = np.where(row == False)
@@ -91,7 +112,7 @@ def CutAllPizza(map_pizza, map_checked, n, slices, figures, x_len, y_len):
             if skip > 0:
                 skip += -1
                 continue
-            skip = CutASlice(map_pizza, map_checked, j, zeros[0][i], n, slices, figures, x_len, y_len)
+            skip = CutASlice(map_pizza, map_checked, j, zeros[0][i], n, slices, figures, x_len, y_len, figure_possibilitymap)
 
 
 def read_file(filename):
@@ -117,7 +138,8 @@ def find_slices_for_file(input_filename):
     map_checked = np.zeros((y_len, x_len), dtype=np.bool)#[[0 for x in range(x_len)] for y in range(y_len)]
     slices = []
     print(input_filename)
-    CutAllPizza(map_pizza, map_checked, min_things, slices, figures, x_len, y_len)
+    figure_possibilitymap = generate_figure_possibilitymap(map_pizza, figures, min_things)
+    CutAllPizza(map_pizza, map_checked, min_things, slices, figures, x_len, y_len, figure_possibilitymap)
     input_filename += '_results'
     file = open(input_filename, "w")
     file.write(str(len(slices)))
@@ -143,6 +165,6 @@ def find_slices_for_file(input_filename):
 
 if __name__ == '__main__':
     find_slices_for_file("big.in")
-    # find_slices_for_file("medium.in")
-    # find_slices_for_file("example.in")
-    # find_slices_for_file("small.in")
+    find_slices_for_file("medium.in")
+    find_slices_for_file("example.in")
+    find_slices_for_file("small.in")
